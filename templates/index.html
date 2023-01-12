@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Logger</title>
+
+    <link rel="shortcut icon" href="https://www.viltstigen.se/favicon.png">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/select/1.5.0/css/select.dataTables.min.css">
+    <script type="text/javascript" charset="utf8"
+            src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.js"></script>
+    <script type="text/javascript" charset="utf8"
+            src=https://cdn.datatables.net/select/1.5.0/js/dataTables.select.min.js></script>
+
+</head>
+<body>
+
+<table id="data" class="table table-striped">
+    <thead>
+    <tr>
+        <th></th>
+        <th>Time</th>
+        <th>Msg</th>
+        <th>Level</th>
+        <th>Path</th>
+    </tr>
+    </thead>
+</table>
+
+<button id="button" ><b>Delete record</b></button>
+
+<script>
+    $(document).ready(function () {
+        const button = $('#button').prop('disabled', true);
+
+        const table = $('#data').DataTable({
+            columnDefs: [{
+                orderable: false,
+                data: null,
+                defaultContent: '',
+                className: 'select-checkbox',
+                targets: 0
+            }],
+            select: {
+                style: 'os', // style: 'single'
+                selector: 'td:first-child'
+            },
+            info: false,
+            order: [[1, 'asc']],
+            paging: true,
+            searching: false,
+            ajaxSource: "/logger/log",
+            columns: [
+                {data: null},
+                {
+                    data: "created",
+                    render: function (val) {
+                        return new Date(parseFloat(1000 * val)).toLocaleString("SWE")
+                    },
+                },
+                {data: "msg"},
+                {data: "levelname"},
+                {data: "pathname"}
+            ],
+        });
+
+        $('#data tbody').on('click', 'tr', function () {
+            if ($(this).hasClass('selected')) {
+                $(this).removeClass('selected');
+                button.prop('disabled', true);
+            } else {
+                table.$('tr.selected').removeClass('selected');
+                $(this).addClass('selected');
+                button.prop('disabled', false);
+            }
+        });
+
+        button.click(function () {
+            const data = table.row('.selected').data();
+
+            console.log(data)
+            $.ajax({
+                url: '/logger/log',
+                type: 'DELETE',
+                data: data,
+                success: function (result) {
+                    //table.row('.selected').remove().draw(false);
+                    button.prop('disabled', true);
+                    table.ajax.reload();
+                }
+            });
+
+        });
+    });
+</script>
+
+<footer>
+    <p style="font-size:12px">
+        Copyright (C) Mats Melander
+    </p>
+</footer>
+</body>
+</html>
