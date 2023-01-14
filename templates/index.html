@@ -19,7 +19,6 @@
 <table id="data" class="table table-striped">
     <thead>
     <tr>
-        <th></th>
         <th>Time</th>
         <th>Msg</th>
         <th>Level</th>
@@ -28,7 +27,7 @@
     </thead>
 </table>
 
-<button id="button" ><b>Delete record</b></button>
+<button id="button"><b>Delete record</b></button>
 
 <script>
     $(document).ready(function () {
@@ -39,20 +38,14 @@
                 orderable: false,
                 data: null,
                 defaultContent: '',
-                className: 'select-checkbox',
                 targets: 0
             }],
-            select: {
-                style: 'os', // style: 'single'
-                selector: 'td:first-child'
-            },
             info: false,
-            order: [[1, 'asc']],
-            paging: true,
+            order: [[0, 'asc']],
+            paging: false,
             searching: false,
             ajaxSource: "/logger/log",
             columns: [
-                {data: null},
                 {
                     data: "created",
                     render: function (val) {
@@ -65,34 +58,32 @@
             ],
         });
 
+        button.prop('disabled', table.rows('.selected').data().length === 0);
+
         $('#data tbody').on('click', 'tr', function () {
-            if ($(this).hasClass('selected')) {
-                $(this).removeClass('selected');
-                button.prop('disabled', true);
-            } else {
-                table.$('tr.selected').removeClass('selected');
-                $(this).addClass('selected');
-                button.prop('disabled', false);
-            }
+            $(this).toggleClass('selected');
+            button.prop('disabled', table.rows('.selected').data().length === 0);
         });
 
         button.click(function () {
-            const data = table.row('.selected').data();
+                let rowdata = table.rows('.selected').data();
 
-            console.log(data)
-            $.ajax({
-                url: '/logger/log',
-                type: 'DELETE',
-                data: data,
-                success: function (result) {
-                    //table.row('.selected').remove().draw(false);
-                    button.prop('disabled', true);
-                    table.ajax.reload();
+                for (let i = 0; i < rowdata.length; i++) {
+                    console.log(rowdata[i])
+                    $.ajax({
+                        url: '/logger/log',
+                        type: 'DELETE',
+                        data: rowdata[i],
+                        success: function (result) {
+                            $(this).toggleClass('selected');
+                        }
+                    });
                 }
-            });
-
-        });
-    });
+                table.ajax.reload();
+                button.prop('disabled', True);
+            }
+        );
+     });
 </script>
 
 <footer>
