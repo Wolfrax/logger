@@ -55,5 +55,7 @@ def log():
 try:
     with open(FN, "r") as f:
         DB = json.load(f)
+except json.decoder.JSONDecodeError:
+    pass  # File exists but is empty
 except FileNotFoundError:
     pass
