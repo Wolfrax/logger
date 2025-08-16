@@ -35,23 +35,28 @@ def log():
             'levelname': request.form['levelname']
         }
 
-        # Insert new entry at the top
-        DB['data'].insert(0, log_entry)
+        # Add the new entry
+        DB['data'].append(log_entry)
 
-        # Parse new entry's timestamp
+        # Sort entries by created timestamp (newest first)
         try:
-            new_created = datetime.fromtimestamp(float(log_entry['created']))
+            DB['data'].sort(
+                key=lambda x: float(x['created']),
+                reverse=True
+            )
         except Exception:
-            # If created is not a timestamp, skip purge
-            new_created = None
+            pass  # In case created is not numeric
 
-        # Purge old entries (older than 4 weeks relative to new entry)
-        if new_created:
-            cutoff = new_created - timedelta(weeks=4)
+        # Purge old entries (older than 4 weeks relative to newest entry)
+        try:
+            newest_created = datetime.fromtimestamp(float(DB['data'][0]['created']))
+            cutoff = newest_created - timedelta(weeks=4)
             DB['data'] = [
                 entry for entry in DB['data']
                 if datetime.fromtimestamp(float(entry['created'])) >= cutoff
             ]
+        except Exception:
+            pass
 
         with open(FN, "w") as f:
             json.dump(DB, f, indent=4)
@@ -65,6 +70,14 @@ def log():
         if data in DB['data']:
             DB['data'].remove(data)
             with open(FN, "w") as f:
+                # Keep file sorted newest first after deletion
+                try:
+                    DB['data'].sort(
+                        key=lambda x: float(x['created']),
+                        reverse=True
+                    )
+                except Exception:
+                    pass
                 json.dump(DB, f, indent=4)
             return DB
         else:
@@ -77,8 +90,15 @@ def log():
 try:
     with open(FN, "r") as f:
         DB = json.load(f)
+        # Ensure loaded data is sorted newest first
+        try:
+            DB['data'].sort(
+                key=lambda x: float(x['created']),
+                reverse=True
+            )
+        except Exception:
+            pass
 except json.decoder.JSONDecodeError:
     pass  # File exists but is empty
 except FileNotFoundError:
     pass
-
