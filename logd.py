@@ -1,9 +1,32 @@
 from flask import Flask, request, render_template, abort
 import json
 from datetime import datetime, timedelta
+import os
+
+def is_raspberry_pi():
+    """Return True if running on a Raspberry Pi with Raspbian OS"""
+    try:
+        # Check if "Raspberry Pi" in hardware info
+        if os.path.exists("/proc/device-tree/model"):
+            with open("/proc/device-tree/model", "r") as f:
+                model = f.read().lower()
+                if "raspberry pi" in model:
+                    return True
+
+        # Fallback: check distribution
+        try:
+            import distro
+            if "raspbian" in distro.id().lower() or "raspberry" in distro.name().lower():
+                return True
+        except ImportError:
+            pass
+    except Exception:
+        pass
+
+    return False
 
 app = Flask(__name__)
-FN = "/home/pi/app/logger/logger.json"
+FN = "/home/pi/app/logger/logger.json" if is_raspberry_pi() else "logger.json"
 DB = {'data': []}
 
 
@@ -24,7 +47,7 @@ app.wsgi_app = ReverseProxied(app.wsgi_app, script_name='/logger')
 def root():
     return render_template('index.html')
 
-
+@app.route('/logger/log', methods=['GET', 'POST', 'DELETE'])
 @app.route('/log', methods=['GET', 'POST', 'DELETE'])
 def log():
     if request.method == 'POST':
@@ -101,4 +124,5 @@ try:
 except json.decoder.JSONDecodeError:
     pass  # File exists but is empty
 except FileNotFoundError:
+    file = open(FN, 'w+')
     pass
